@@ -64,6 +64,7 @@ resource "aws_security_group_rule" "sg-cluster-ingress-workstation-https" {
 resource "aws_eks_cluster" "test-cluster" {
   name     = test-cluster
   role_arn = aws_iam_role.iam-cluster.arn
+  version  = "1.22"
 
   vpc_config {
     security_group_ids = [aws_security_group.sg-cluster.id]

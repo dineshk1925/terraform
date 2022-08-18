@@ -16,13 +16,14 @@ resource "aws_iam_role" "iam-cluster" {
       "Effect": "Allow",
       "Principal": {
         "Service": "eks.amazonaws.com"
-      },a
+      },
       "Action": "sts:AssumeRole"
     }
   ]
 }
 POLICY
 }
+
 
 resource "aws_iam_role_policy_attachment" "iam-cluster-AmazonEKSClusterPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
@@ -68,8 +69,7 @@ resource "aws_eks_cluster" "test-cluster" {
 
   vpc_config {
     security_group_ids = [aws_security_group.sg-cluster.id]
-    subnet_ids         = aws_subnet.public-subnet-1[*].id
-    subnet_ids         = aws_subnet.public-subnet-2[*].id
+    subnet_ids         = [aws_subnet.public-subnet-1[*].id,aws_subnet.public-subnet-2[*].id]
   }
 
   depends_on = [
@@ -123,11 +123,10 @@ resource "aws_iam_role_policy_attachment" "test-ng-AmazonEC2ContainerRegistryRea
 
 
 resource "aws_eks_node_group" "demo-ng" {
-  cluster_name    = aws_eks_cluster.test_eks
+  cluster_name    = aws_eks_cluster.test-cluster
   node_group_name = "demo-ng"
   node_role_arn   = aws_iam_role.test-ng.arn
-  subnet_ids      = aws_subnet.private-subnet-1[*].id
-  subnet_ids      = aws_subnet.private-subnet-2[*].id
+  subnet_ids      = [aws_subnet.private-subnet-1[*].id,aws_subnet.private-subnet-2[*].id]
   disc_size       = 10
   instance_types  = ["t2.micro"]
 
@@ -156,8 +155,8 @@ resource "aws_eks_node_group" "demo-ng" {
 ##Creating VPC
 resource "aws_vpc" "vpc" {
   cidr_block = "10.0.0.0/16"
-  instance_tendancy = "default"
-  enable_dns_hostname = true
+  instance_tenancy = "default"
+  enable_dns_hostnames = true
 
   tags = {
     name = "test_vpc"
@@ -177,7 +176,7 @@ resource "aws_subnet" "public-subnet-1" {
   vpc_id = "${aws_vpc.vpc.id}"
   cidr_block = "10.0.0.0/24"
   availability_zone  = "us-east-1a"
-  map_publicip_on_launch = true
+  map_public_ip_on_launch = true
 
   tags = {
       name = "public subnet 1"
@@ -188,7 +187,7 @@ resource "aws_subnet" "public-subnet-2" {
   vpc_id = "${aws_vpc.vpc.id}"
   cidr_block = "10.0.1.0/24"
   availability_zone  = "us-east-1b"
-  map_publicip_on_launch = true
+  map_public_ip_on_launch = true
 
   tags = {
      name = "public subnet 2"
@@ -225,7 +224,7 @@ resource "aws_subnet" "private-subnet-1" {
   vpc_id = "${aws_vpc.vpc.id}"
   cidr_block = "10.0.2.0/24"
   availability_zone_id = "us-east-1a"
-  map_publicip_on_launch = false
+  map_public_ip_on_launch = false
 
 tags = {
    name = "private_subnet-1"
@@ -236,7 +235,7 @@ resource "aws_subnet" "private-subnet-2" {
   vpc_id = "${aws_vpc.vpc.id}"
   cidr_block = "10.0.3.0/24"
   availability_zone_id = "us-east-1b"
-  map_publicip_on_launch = false
+  map_public_ip_on_launch = false
 
 tags = {
    name = "private_subnet-2"
@@ -247,7 +246,7 @@ resource "aws_subnet" "private-subnet-3" {
   vpc_id = "${aws_vpc.vpc.id}"
   cidr_block = "10.0.4.0/24"
   availability_zone_id = "us-east-1a"
-  map_publicip_on_launch = false
+  map_public_ip_on_launch = false
 
 tags = {
    name = "private_subnet-3"
@@ -258,10 +257,9 @@ resource "aws_subnet" "private-subnet-4" {
   vpc_id = "${aws_vpc.vpc.id}"
   cidr_block = "10.0.5.0/24"
   availability_zone_id = "us-east-1b"
-  map_publicip_on_launch = false
+  map_public_ip_on_launch = false
 
 tags = {
    name = "private_subnet-4"
   }
 }
-

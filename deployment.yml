@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-standalone
+  namespace: iaworksheet-dev
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: redis-standalone
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+        sidecar.istio.io/proxyCPU: 30m
+        sidecar.istio.io/proxyCPULimit: 50m
+        sidecar.istio.io/proxyMemory: 50Mi
+        sidecar.istio.io/proxyMemoryLimit: 100Mi
+      labels:
+        app: redis-standalone
+    spec:
+      containers:
+      - args:
+        - /opt/software/redis-stable/redis.conf
+        command:
+        - redis-server
+        image: registry-harbor-dev.apps.ocpdev1.vwoa.na.vwg/baseimages/vwgoa-ubi-redis:202302151501
+        imagePullPolicy: Always
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - /health/ping_liveness_local.sh 5
+          failureThreshold: 5
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 6
+        name: redis-standalone
+        ports:
+          - name: tcp-redis
+            containerPort: 6379
+            protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - /health/ping_readiness_local.sh 1
+          failureThreshold: 5
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 2
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /data/
+          name: iaworksheet-redis
+        - mountPath: /health
+          name: health
+        - name: default-config
+          mountPath: /opt/software/redis-stable/redis.conf
+          subPath: redis.conf
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: regcred
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        supplementalGroups:
+        - 5009
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: default-config
+        configMap:
+          name: iaworksheet-dev-redis-standalone-default
+          defaultMode: 420
+      - name: iaworksheet-redis
+        persistentVolumeClaim:
+          claimName: iaworksheet-redis-redis-standalone-0
+      - configMap:
+          defaultMode: 493
+          name: redis-standalone-health-check
+        name: health

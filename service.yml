@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: redis-standalone
+  namespace: iaworksheet-dev
+spec:
+  ports:
+    - name: tcp-redis
+      protocol: TCP
+      port: 6379
+      targetPort: tcp-redis
+  selector:
+    app: redis-standalone

@@ -1,0 +1,65 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: redis-standalone-health-check
+  namespace: iaworksheet-dev
+data:
+  ping_liveness_local.sh: >-
+    #!/bin/sh
+
+    response=$(
+      redis-cli \
+        -h localhost \
+        -p 6379 \
+        ping
+    )
+
+    if [ "$?" -eq "124" ]; then
+      echo "Timed out"
+      exit 1
+    fi
+
+    responseFirstWord=$(echo $response | head -n1 | awk '{print $1;}')
+
+    if [ "$response" != "PONG" ] && [ "$responseFirstWord" != "LOADING" ] && [
+    "$responseFirstWord" != "MASTERDOWN" ]; then
+      echo "$response"
+      exit 1
+    fi
+  ping_readiness_local.sh: |-
+    #!/bin/sh
+    response=$(
+      redis-cli \
+        -h localhost \
+        -p 6379 \
+        ping
+    )
+    if [ "$?" -eq "124" ]; then
+      echo "Timed out"
+      exit 1
+    fi
+    if [ "$response" != "PONG" ]; then
+      echo "$response"
+      exit 1
+    fi
+
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: iaworksheet-redis-dev-pv
+spec:
+  capacity:
+    storage: 2Gi
+  nfs:
+    server: usmiabh1dnfs10a.vwoa.na.vwg
+    path: /redis/dev/iaworksheet/iaworksheet-dev-redis-standalone/
+  accessModes:
+    - ReadWriteOnce
+  claimRef:
+    kind: PersistentVolumeClaim
+    namespace: iaworksheet-dev
+    name: iaworksheet-redis-redis-standalone-0
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: non-dynamic
+  volumeMode: Filesystem
